@@ -11,6 +11,7 @@
 # Testing operator overloading is correct
 #############################################################################
 using JuMP, FactCheck
+using BaseTestNext
 
 # To ensure the tests work on both Windows and Linux/OSX, we need
 # to use the correct comparison operators in the strings
@@ -18,30 +19,30 @@ const leq = JuMP.repl[:leq]
 const geq = JuMP.repl[:geq]
 const  eq = JuMP.repl[:eq]
 
-facts("[operator] Testing basic operator overloads") do
+@testset "[operator] Operator overloads" begin
     m = Model()
     @defVar(m, w)
     @defVar(m, x)
     @defVar(m, y)
     @defVar(m, z)
     aff = 7.1 * x + 2.5
-    @fact affToStr(aff) --> "7.1 x + 2.5"
+    @test affToStr(aff) == "7.1 x + 2.5"
     aff2 = 1.2 * y + 1.2
-    @fact affToStr(aff2) --> "1.2 y + 1.2"
+    @test affToStr(aff2) == "1.2 y + 1.2"
     q = 2.5 * y * z + aff
-    @fact quadToStr(q) --> "2.5 y*z + 7.1 x + 2.5"
+    @test quadToStr(q) == "2.5 y*z + 7.1 x + 2.5"
     q2 = 8 * x * z + aff2
-    @fact quadToStr(q2) --> "8 x*z + 1.2 y + 1.2"
+    @test quadToStr(q2) == "8 x*z + 1.2 y + 1.2"
     q3 = 2 * x * x + 1 * y * y + z + 3
-    @fact quadToStr(q3) --> "2 x² + y² + z + 3"
+    @test quadToStr(q3) == "2 x² + y² + z + 3"
 
     nrm = norm([w,1-w])
-    @fact exprToStr(nrm) --> "√(w² + (-w + 1)²)"
+    @test exprToStr(nrm) == "√(w² + (-w + 1)²)"
     socexpr = 1.5*nrm - 2 - w
-    @fact exprToStr(socexpr) --> "1.5 √(w² + (-w + 1)²) - w - 2"
+    @test exprToStr(socexpr) == "1.5 √(w² + (-w + 1)²) - w - 2"
 
-    @fact isequal(3w + 2y, 3w +2y) --> true
-    @fact isequal(3w + 2y + 1, 3w + 2y) --> false
+    @test isequal(3w + 2y, 3w +2y)
+    @test !isequal(3w + 2y + 1, 3w + 2y)
 
     # Different objects that must all interact:
     # 1. Number
@@ -50,170 +51,170 @@ facts("[operator] Testing basic operator overloads") do
     # 4. QuadExpr
 
     # 1. Number tests
-    context("Number--???") do
+    @testset "Number--???" begin
     # 1-1 Number--Number - nope!
     # 1-2 Number--Variable
-    @fact affToStr(4.13 + w) --> "w + 4.13"
-    @fact affToStr(3.16 - w) --> "-w + 3.16"
-    @fact affToStr(5.23 * w) --> "5.23 w"
+    @test affToStr(4.13 + w) == "w + 4.13"
+    @test affToStr(3.16 - w) == "-w + 3.16"
+    @test affToStr(5.23 * w) == "5.23 w"
     @fact_throws  2.94 / w
-    @fact conToStr(2.1 ≤ w) --> "w $geq 2.1"
-    @fact conToStr(2.1 == w) --> "w $eq 2.1"
-    @fact conToStr(2.1 ≥ w) --> "w $leq 2.1"
-    @fact conToStr(@LinearConstraint(2.1 ≤ w)) --> "-w $leq -2.1"
-    @fact conToStr(@LinearConstraint(2.1 == w)) --> "-w $eq -2.1"
-    @fact conToStr(@LinearConstraint(2.1 ≥ w)) --> "-w $geq -2.1"
+    @test conToStr(2.1 ≤ w) == "w $geq 2.1"
+    @test conToStr(2.1 == w) == "w $eq 2.1"
+    @test conToStr(2.1 ≥ w) == "w $leq 2.1"
+    @test conToStr(@LinearConstraint(2.1 ≤ w)) == "-w $leq -2.1"
+    @test conToStr(@LinearConstraint(2.1 == w)) == "-w $eq -2.1"
+    @test conToStr(@LinearConstraint(2.1 ≥ w)) == "-w $geq -2.1"
     # 1-3 Number--Norm
-    @fact exprToStr(4.13 + nrm) --> "√(w² + (-w + 1)²) + 4.13"
-    @fact exprToStr(3.16 - nrm) --> "-1.0 √(w² + (-w + 1)²) + 3.16"
-    @fact exprToStr(5.23 * nrm) --> "5.23 √(w² + (-w + 1)²)"
+    @test exprToStr(4.13 + nrm) == "√(w² + (-w + 1)²) + 4.13"
+    @test exprToStr(3.16 - nrm) == "-1.0 √(w² + (-w + 1)²) + 3.16"
+    @test exprToStr(5.23 * nrm) == "5.23 √(w² + (-w + 1)²)"
     @fact_throws 2.94 / nrm
     @fact_throws @SOCConstraint(2.1 ≤ nrm)
     @fact_throws @SOCConstraint(2.1 == nrm)
-    @fact conToStr(@SOCConstraint(2.1 ≥ nrm)) --> "√(w² + (-w + 1)²) $leq 2.1"
+    @test conToStr(@SOCConstraint(2.1 ≥ nrm)) == "√(w² + (-w + 1)²) $leq 2.1"
     # 1-4 Number--AffExpr
-    @fact affToStr(1.5 + aff) --> "7.1 x + 4"
-    @fact affToStr(1.5 - aff) --> "-7.1 x - 1"
-    @fact affToStr(2 * aff) --> "14.2 x + 5"
+    @test affToStr(1.5 + aff) == "7.1 x + 4"
+    @test affToStr(1.5 - aff) == "-7.1 x - 1"
+    @test affToStr(2 * aff) == "14.2 x + 5"
     @fact_throws  2 / aff
-    @fact conToStr(1 ≤ aff) --> "7.1 x $geq -1.5"
-    @fact conToStr(1 == aff) --> "7.1 x $eq -1.5"
-    @fact conToStr(1 ≥ aff) --> "7.1 x $leq -1.5"
-    @fact conToStr(@LinearConstraint(1 ≤ aff)) --> "-7.1 x $leq 1.5"
-    @fact conToStr(@LinearConstraint(1 == aff)) --> "-7.1 x $eq 1.5"
-    @fact conToStr(@LinearConstraint(1 ≥ aff)) --> "-7.1 x $geq 1.5"
+    @test conToStr(1 ≤ aff) == "7.1 x $geq -1.5"
+    @test conToStr(1 == aff) == "7.1 x $eq -1.5"
+    @test conToStr(1 ≥ aff) == "7.1 x $leq -1.5"
+    @test conToStr(@LinearConstraint(1 ≤ aff)) == "-7.1 x $leq 1.5"
+    @test conToStr(@LinearConstraint(1 == aff)) == "-7.1 x $eq 1.5"
+    @test conToStr(@LinearConstraint(1 ≥ aff)) == "-7.1 x $geq 1.5"
     # 1-5 Number--QuadExpr
-    @fact quadToStr(1.5 + q) --> "2.5 y*z + 7.1 x + 4"
-    @fact quadToStr(1.5 - q) --> "-2.5 y*z - 7.1 x - 1"
-    @fact quadToStr(2 * q) --> "5 y*z + 14.2 x + 5"
+    @test quadToStr(1.5 + q) == "2.5 y*z + 7.1 x + 4"
+    @test quadToStr(1.5 - q) == "-2.5 y*z - 7.1 x - 1"
+    @test quadToStr(2 * q) == "5 y*z + 14.2 x + 5"
     @fact_throws  2 / q
-    @fact conToStr(1 ≤ q) --> "2.5 y*z + 7.1 x + 1.5 $geq 0"
-    @fact conToStr(1 == q) --> "2.5 y*z + 7.1 x + 1.5 $eq 0"
-    @fact conToStr(1 ≥ q) --> "2.5 y*z + 7.1 x + 1.5 $leq 0"
-    @fact conToStr(@QuadConstraint(1 ≤ q)) --> "-2.5 y*z - 7.1 x - 1.5 $leq 0"
-    @fact conToStr(@QuadConstraint(1 == q)) --> "-2.5 y*z - 7.1 x - 1.5 $eq 0"
-    @fact conToStr(@QuadConstraint(1 ≥ q)) --> "-2.5 y*z - 7.1 x - 1.5 $geq 0"
+    @test conToStr(1 ≤ q) == "2.5 y*z + 7.1 x + 1.5 $geq 0"
+    @test conToStr(1 == q) == "2.5 y*z + 7.1 x + 1.5 $eq 0"
+    @test conToStr(1 ≥ q) == "2.5 y*z + 7.1 x + 1.5 $leq 0"
+    @test conToStr(@QuadConstraint(1 ≤ q)) == "-2.5 y*z - 7.1 x - 1.5 $leq 0"
+    @test conToStr(@QuadConstraint(1 == q)) == "-2.5 y*z - 7.1 x - 1.5 $eq 0"
+    @test conToStr(@QuadConstraint(1 ≥ q)) == "-2.5 y*z - 7.1 x - 1.5 $geq 0"
     # 1-6 Number--SOCExpr
-    @fact exprToStr(1.5 + socexpr) --> "1.5 √(w² + (-w + 1)²) - w - 0.5"
-    @fact exprToStr(1.5 - socexpr) --> "-1.5 √(w² + (-w + 1)²) + w + 3.5"
-    @fact exprToStr(1.5 * socexpr) --> "2.25 √(w² + (-w + 1)²) - 1.5 w - 3"
+    @test exprToStr(1.5 + socexpr) == "1.5 √(w² + (-w + 1)²) - w - 0.5"
+    @test exprToStr(1.5 - socexpr) == "-1.5 √(w² + (-w + 1)²) + w + 3.5"
+    @test exprToStr(1.5 * socexpr) == "2.25 √(w² + (-w + 1)²) - 1.5 w - 3"
     @fact_throws 1.5 / socexpr
     @fact_throws @SOCConstraint(2.1 ≤ socexpr)
     @fact_throws @SOCConstraint(2.1 == socexpr)
-    @fact conToStr(@SOCConstraint(2.1 ≥ socexpr)) --> "1.5 √(w² + (-w + 1)²) $leq w + 4.1"
+    @test conToStr(@SOCConstraint(2.1 ≥ socexpr)) == "1.5 √(w² + (-w + 1)²) $leq w + 4.1"
     end
 
     # 2. Variable tests
-    context("Variable--???") do
+    @testset "Variable--???" begin
     # 2-0 Variable unary
-    @fact (+x) --> exactly(x)
-    @fact affToStr(-x) --> "-x"
+    @test isequal(+x, x)
+    @test affToStr(-x) == "-x"
     # 2-1 Variable--Number
-    @fact affToStr(w + 4.13) --> "w + 4.13"
-    @fact affToStr(w - 4.13) --> "w - 4.13"
-    @fact affToStr(w * 4.13) --> "4.13 w"
-    @fact affToStr(w / 2.00) --> "0.5 w"
-    @fact conToStr(w ≤ 1) --> "w $leq 1"
-    @fact conToStr(w == 1) --> "w $eq 1"
-    @fact conToStr(w ≥ 1) --> "w $geq 1"
-    @fact conToStr(x*y ≤ 1) --> "x*y - 1 $leq 0"
-    @fact conToStr(x*y == 1) --> "x*y - 1 $eq 0"
-    @fact conToStr(x*y ≥ 1) --> "x*y - 1 $geq 0"
-    @fact conToStr(@LinearConstraint(w ≤ 1)) --> "w $leq 1"
-    @fact conToStr(@LinearConstraint(w == 1)) --> "w $eq 1"
-    @fact conToStr(@LinearConstraint(w ≥ 1)) --> "w $geq 1"
-    @fact conToStr(@QuadConstraint(x*y ≤ 1)) --> "x*y - 1 $leq 0"
-    @fact conToStr(@QuadConstraint(x*y == 1)) --> "x*y - 1 $eq 0"
-    @fact conToStr(@QuadConstraint(x*y ≥ 1)) --> "x*y - 1 $geq 0"
+    @test affToStr(w + 4.13) == "w + 4.13"
+    @test affToStr(w - 4.13) == "w - 4.13"
+    @test affToStr(w * 4.13) == "4.13 w"
+    @test affToStr(w / 2.00) == "0.5 w"
+    @test conToStr(w ≤ 1) == "w $leq 1"
+    @test conToStr(w == 1) == "w $eq 1"
+    @test conToStr(w ≥ 1) == "w $geq 1"
+    @test conToStr(x*y ≤ 1) == "x*y - 1 $leq 0"
+    @test conToStr(x*y == 1) == "x*y - 1 $eq 0"
+    @test conToStr(x*y ≥ 1) == "x*y - 1 $geq 0"
+    @test conToStr(@LinearConstraint(w ≤ 1)) == "w $leq 1"
+    @test conToStr(@LinearConstraint(w == 1)) == "w $eq 1"
+    @test conToStr(@LinearConstraint(w ≥ 1)) == "w $geq 1"
+    @test conToStr(@QuadConstraint(x*y ≤ 1)) == "x*y - 1 $leq 0"
+    @test conToStr(@QuadConstraint(x*y == 1)) == "x*y - 1 $eq 0"
+    @test conToStr(@QuadConstraint(x*y ≥ 1)) == "x*y - 1 $geq 0"
     # 2-2 Variable--Variable
-    @fact affToStr(w + x) --> "w + x"
-    @fact affToStr(w - x) --> "w - x"
-    @fact quadToStr(w * x) --> "w*x"
-    @fact affToStr(x - x) --> "0"
+    @test affToStr(w + x) == "w + x"
+    @test affToStr(w - x) == "w - x"
+    @test quadToStr(w * x) == "w*x"
+    @test affToStr(x - x) == "0"
     @fact_throws  w / x
-    @fact conToStr(w ≤ x) --> "w - x $leq 0"
-    @fact conToStr(w == x) --> "w - x $eq 0"
-    @fact conToStr(w ≥ x) --> "w - x $geq 0"
-    @fact conToStr(y*z ≤ x) --> "y*z - x $leq 0"
-    @fact conToStr(y*z == x) --> "y*z - x $eq 0"
-    @fact conToStr(y*z ≥ x) --> "y*z - x $geq 0"
-    @fact conToStr(x ≤ x) --> "0 $leq 0"
-    @fact conToStr(x == x) --> "0 $eq 0"
-    @fact conToStr(x ≥ x) --> "0 $geq 0"
-    @fact conToStr(@LinearConstraint(w ≤ x)) --> "w - x $leq 0"
-    @fact conToStr(@LinearConstraint(w == x)) --> "w - x $eq 0"
-    @fact conToStr(@LinearConstraint(w ≥ x)) --> "w - x $geq 0"
-    @fact conToStr(@QuadConstraint(y*z ≤ x)) --> "y*z - x $leq 0"
-    @fact conToStr(@QuadConstraint(y*z == x)) --> "y*z - x $eq 0"
-    @fact conToStr(@QuadConstraint(y*z ≥ x)) --> "y*z - x $geq 0"
-    @fact conToStr(@LinearConstraint(x ≤ x)) --> "0 $leq 0"
-    @fact conToStr(@LinearConstraint(x == x)) --> "0 $eq 0"
-    @fact conToStr(@LinearConstraint(x ≥ x)) --> "0 $geq 0"
+    @test conToStr(w ≤ x) == "w - x $leq 0"
+    @test conToStr(w == x) == "w - x $eq 0"
+    @test conToStr(w ≥ x) == "w - x $geq 0"
+    @test conToStr(y*z ≤ x) == "y*z - x $leq 0"
+    @test conToStr(y*z == x) == "y*z - x $eq 0"
+    @test conToStr(y*z ≥ x) == "y*z - x $geq 0"
+    @test conToStr(x ≤ x) == "0 $leq 0"
+    @test conToStr(x == x) == "0 $eq 0"
+    @test conToStr(x ≥ x) == "0 $geq 0"
+    @test conToStr(@LinearConstraint(w ≤ x)) == "w - x $leq 0"
+    @test conToStr(@LinearConstraint(w == x)) == "w - x $eq 0"
+    @test conToStr(@LinearConstraint(w ≥ x)) == "w - x $geq 0"
+    @test conToStr(@QuadConstraint(y*z ≤ x)) == "y*z - x $leq 0"
+    @test conToStr(@QuadConstraint(y*z == x)) == "y*z - x $eq 0"
+    @test conToStr(@QuadConstraint(y*z ≥ x)) == "y*z - x $geq 0"
+    @test conToStr(@LinearConstraint(x ≤ x)) == "0 $leq 0"
+    @test conToStr(@LinearConstraint(x == x)) == "0 $eq 0"
+    @test conToStr(@LinearConstraint(x ≥ x)) == "0 $geq 0"
     # 2-3 Variable--Norm
-    @fact exprToStr(w + nrm) --> "√(w² + (-w + 1)²) + w"
-    @fact exprToStr(w - nrm) --> "-1.0 √(w² + (-w + 1)²) + w"
+    @test exprToStr(w + nrm) == "√(w² + (-w + 1)²) + w"
+    @test exprToStr(w - nrm) == "-1.0 √(w² + (-w + 1)²) + w"
     @fact_throws w * nrm
     @fact_throws w / nrm
     @fact_throws @SOCConstraint(w ≤ nrm)
     @fact_throws @SOCConstraint(w == nrm)
-    @fact conToStr(@SOCConstraint(w ≥ nrm)) --> "√(w² + (-w + 1)²) $leq w"
+    @test conToStr(@SOCConstraint(w ≥ nrm)) == "√(w² + (-w + 1)²) $leq w"
     # 2-4 Variable--AffExpr
-    @fact affToStr(z + aff) --> "7.1 x + z + 2.5"
-    @fact affToStr(z - aff) --> "-7.1 x + z - 2.5"
-    @fact quadToStr(z * aff) --> "7.1 x*z + 2.5 z"
+    @test affToStr(z + aff) == "7.1 x + z + 2.5"
+    @test affToStr(z - aff) == "-7.1 x + z - 2.5"
+    @test quadToStr(z * aff) == "7.1 x*z + 2.5 z"
     @fact_throws  z / aff
-    @fact conToStr(z ≤ aff) --> "-7.1 x + z $leq 2.5"
-    @fact conToStr(z == aff) --> "-7.1 x + z $eq 2.5"
-    @fact conToStr(z ≥ aff) --> "-7.1 x + z $geq 2.5"
-    @fact conToStr(7.1 * x - aff ≤ 0) --> "0 $leq 2.5"
-    @fact conToStr(7.1 * x - aff == 0) --> "0 $eq 2.5"
-    @fact conToStr(7.1 * x - aff ≥ 0) --> "0 $geq 2.5"
-    @fact conToStr(@LinearConstraint(z ≤ aff)) --> "z - 7.1 x $leq 2.5"
-    @fact conToStr(@LinearConstraint(z == aff)) --> "z - 7.1 x $eq 2.5"
-    @fact conToStr(@LinearConstraint(z ≥ aff)) --> "z - 7.1 x $geq 2.5"
-    @fact conToStr(@LinearConstraint(7.1 * x - aff ≤ 0)) --> "0 $leq 2.5"
-    @fact conToStr(@LinearConstraint(7.1 * x - aff == 0)) --> "0 $eq 2.5"
-    @fact conToStr(@LinearConstraint(7.1 * x - aff ≥ 0)) --> "0 $geq 2.5"
+    @test conToStr(z ≤ aff) == "-7.1 x + z $leq 2.5"
+    @test conToStr(z == aff) == "-7.1 x + z $eq 2.5"
+    @test conToStr(z ≥ aff) == "-7.1 x + z $geq 2.5"
+    @test conToStr(7.1 * x - aff ≤ 0) == "0 $leq 2.5"
+    @test conToStr(7.1 * x - aff == 0) == "0 $eq 2.5"
+    @test conToStr(7.1 * x - aff ≥ 0) == "0 $geq 2.5"
+    @test conToStr(@LinearConstraint(z ≤ aff)) == "z - 7.1 x $leq 2.5"
+    @test conToStr(@LinearConstraint(z == aff)) == "z - 7.1 x $eq 2.5"
+    @test conToStr(@LinearConstraint(z ≥ aff)) == "z - 7.1 x $geq 2.5"
+    @test conToStr(@LinearConstraint(7.1 * x - aff ≤ 0)) == "0 $leq 2.5"
+    @test conToStr(@LinearConstraint(7.1 * x - aff == 0)) == "0 $eq 2.5"
+    @test conToStr(@LinearConstraint(7.1 * x - aff ≥ 0)) == "0 $geq 2.5"
     # 2-5 Variable--QuadExpr
-    @fact quadToStr(w + q) --> "2.5 y*z + 7.1 x + w + 2.5"
-    @fact quadToStr(w - q) --> "-2.5 y*z - 7.1 x + w - 2.5"
+    @test quadToStr(w + q) == "2.5 y*z + 7.1 x + w + 2.5"
+    @test quadToStr(w - q) == "-2.5 y*z - 7.1 x + w - 2.5"
     @fact_throws  w*q
     @fact_throws  w/q
-    @fact conToStr(w ≤ q) --> "-2.5 y*z - 7.1 x + w - 2.5 $leq 0"
-    @fact conToStr(w == q) --> "-2.5 y*z - 7.1 x + w - 2.5 $eq 0"
-    @fact conToStr(w ≥ q) --> "-2.5 y*z - 7.1 x + w - 2.5 $geq 0"
-    @fact conToStr(@QuadConstraint(w ≤ q)) --> "-2.5 y*z + w - 7.1 x - 2.5 $leq 0"
-    @fact conToStr(@QuadConstraint(w == q)) --> "-2.5 y*z + w - 7.1 x - 2.5 $eq 0"
-    @fact conToStr(@QuadConstraint(w ≥ q)) --> "-2.5 y*z + w - 7.1 x - 2.5 $geq 0"
+    @test conToStr(w ≤ q) == "-2.5 y*z - 7.1 x + w - 2.5 $leq 0"
+    @test conToStr(w == q) == "-2.5 y*z - 7.1 x + w - 2.5 $eq 0"
+    @test conToStr(w ≥ q) == "-2.5 y*z - 7.1 x + w - 2.5 $geq 0"
+    @test conToStr(@QuadConstraint(w ≤ q)) == "-2.5 y*z + w - 7.1 x - 2.5 $leq 0"
+    @test conToStr(@QuadConstraint(w == q)) == "-2.5 y*z + w - 7.1 x - 2.5 $eq 0"
+    @test conToStr(@QuadConstraint(w ≥ q)) == "-2.5 y*z + w - 7.1 x - 2.5 $geq 0"
     # 2-6 Variable--SOCExpr
-    @fact exprToStr(y + socexpr) --> "1.5 √(w² + (-w + 1)²) - w + y - 2"
-    @fact exprToStr(y - socexpr) --> "-1.5 √(w² + (-w + 1)²) + w + y + 2"
+    @test exprToStr(y + socexpr) == "1.5 √(w² + (-w + 1)²) - w + y - 2"
+    @test exprToStr(y - socexpr) == "-1.5 √(w² + (-w + 1)²) + w + y + 2"
     @fact_throws y * socexpr
     @fact_throws y / socexpr
     @fact_throws @SOCConstraint(y ≤ socexpr)
     @fact_throws @SOCConstraint(y == socexpr)
-    @fact conToStr(@SOCConstraint(y ≥ socexpr)) --> "1.5 √(w² + (-w + 1)²) $leq y + w + 2"
+    @test conToStr(@SOCConstraint(y ≥ socexpr)) == "1.5 √(w² + (-w + 1)²) $leq y + w + 2"
     end
 
     # 3. Norm tests
-    context("Norm--???") do
+    @testset "Norm--???" begin
     # 3-0 Norm unary
-    @fact exprToStr(+nrm) --> "√(w² + (-w + 1)²)"
-    @fact exprToStr(-nrm) --> "-1.0 √(w² + (-w + 1)²)"
+    @test exprToStr(+nrm) == "√(w² + (-w + 1)²)"
+    @test exprToStr(-nrm) == "-1.0 √(w² + (-w + 1)²)"
     # 3-1 Norm--Number
-    @fact exprToStr(nrm + 1.5) --> "√(w² + (-w + 1)²) + 1.5"
-    @fact exprToStr(nrm - 1.5) --> "√(w² + (-w + 1)²) - 1.5"
-    @fact exprToStr(nrm * 1.5) --> "1.5 √(w² + (-w + 1)²)"
-    @fact exprToStr(nrm / 1.5) --> "0.6666666666666666 √(w² + (-w + 1)²)"
-    @fact conToStr(@SOCConstraint(nrm ≤ 1.5)) --> "√(w² + (-w + 1)²) $leq 1.5"
+    @test exprToStr(nrm + 1.5) == "√(w² + (-w + 1)²) + 1.5"
+    @test exprToStr(nrm - 1.5) == "√(w² + (-w + 1)²) - 1.5"
+    @test exprToStr(nrm * 1.5) == "1.5 √(w² + (-w + 1)²)"
+    @test exprToStr(nrm / 1.5) == "0.6666666666666666 √(w² + (-w + 1)²)"
+    @test conToStr(@SOCConstraint(nrm ≤ 1.5)) == "√(w² + (-w + 1)²) $leq 1.5"
     @fact_throws @SOCConstraint(nrm == 1.5)
     @fact_throws @SOCConstraint(nrm ≥ 1.5)
     # 3-2 Norm--Variable
-    @fact exprToStr(nrm + w) --> "√(w² + (-w + 1)²) + w"
-    @fact exprToStr(nrm - w) --> "√(w² + (-w + 1)²) - w"
+    @test exprToStr(nrm + w) == "√(w² + (-w + 1)²) + w"
+    @test exprToStr(nrm - w) == "√(w² + (-w + 1)²) - w"
     @fact_throws nrm * w
     @fact_throws nrm / w
-    @fact conToStr(@SOCConstraint(nrm ≤ w)) --> "√(w² + (-w + 1)²) $leq w"
+    @test conToStr(@SOCConstraint(nrm ≤ w)) == "√(w² + (-w + 1)²) $leq w"
     @fact_throws conToStr(nrm == w)
     @fact_throws conToStr(nrm ≥ w)
     # 3-3 Norm--Norm
@@ -225,11 +226,11 @@ facts("[operator] Testing basic operator overloads") do
     @fact_throws @SOCConstraint(nrm == nrm)
     @fact_throws @SOCConstraint(nrm ≥ nrm)
     # 3-4 Norm--AffExpr
-    @fact exprToStr(nrm + aff) --> "√(w² + (-w + 1)²) + 7.1 x + 2.5"
-    @fact exprToStr(nrm - aff) --> "√(w² + (-w + 1)²) - 7.1 x - 2.5"
+    @test exprToStr(nrm + aff) == "√(w² + (-w + 1)²) + 7.1 x + 2.5"
+    @test exprToStr(nrm - aff) == "√(w² + (-w + 1)²) - 7.1 x - 2.5"
     @fact_throws nrm * aff
     @fact_throws nrm / aff
-    @fact conToStr(@SOCConstraint(nrm ≤ aff)) --> "√(w² + (-w + 1)²) $leq 7.1 x + 2.5"
+    @test conToStr(@SOCConstraint(nrm ≤ aff)) == "√(w² + (-w + 1)²) $leq 7.1 x + 2.5"
     @fact_throws @SOCConstraint(nrm == aff)
     @fact_throws @SOCConstraint(nrm ≥ aff)
     # 3-5 Norm--QuadExpr
@@ -251,112 +252,112 @@ facts("[operator] Testing basic operator overloads") do
     end
 
     # 4. AffExpr tests
-    context("AffExpr--???") do
+    @testset "AffExpr--???" begin
     # 4-0 AffExpr unary
-    @fact affToStr(+aff) --> "7.1 x + 2.5"
-    @fact affToStr(-aff) --> "-7.1 x - 2.5"
+    @test affToStr(+aff) == "7.1 x + 2.5"
+    @test affToStr(-aff) == "-7.1 x - 2.5"
     # 4-1 AffExpr--Number
-    @fact affToStr(aff + 1.5) --> "7.1 x + 4"
-    @fact affToStr(aff - 1.5) --> "7.1 x + 1"
-    @fact affToStr(aff * 2) --> "14.2 x + 5"
-    @fact affToStr(aff / 2) --> "3.55 x + 1.25"
-    @fact conToStr(aff ≤ 1) --> "7.1 x $leq -1.5"
-    @fact conToStr(aff == 1) --> "7.1 x $eq -1.5"
-    @fact conToStr(aff ≥ 1) --> "7.1 x $geq -1.5"
-    @fact conToStr(@LinearConstraint(aff ≤ 1)) --> "7.1 x $leq -1.5"
-    @fact conToStr(@LinearConstraint(aff == 1)) --> "7.1 x $eq -1.5"
-    @fact conToStr(@LinearConstraint(aff ≥ 1)) --> "7.1 x $geq -1.5"
+    @test affToStr(aff + 1.5) == "7.1 x + 4"
+    @test affToStr(aff - 1.5) == "7.1 x + 1"
+    @test affToStr(aff * 2) == "14.2 x + 5"
+    @test affToStr(aff / 2) == "3.55 x + 1.25"
+    @test conToStr(aff ≤ 1) == "7.1 x $leq -1.5"
+    @test conToStr(aff == 1) == "7.1 x $eq -1.5"
+    @test conToStr(aff ≥ 1) == "7.1 x $geq -1.5"
+    @test conToStr(@LinearConstraint(aff ≤ 1)) == "7.1 x $leq -1.5"
+    @test conToStr(@LinearConstraint(aff == 1)) == "7.1 x $eq -1.5"
+    @test conToStr(@LinearConstraint(aff ≥ 1)) == "7.1 x $geq -1.5"
     # 4-2 AffExpr--Variable
-    @fact affToStr(aff + z) --> "7.1 x + z + 2.5"
-    @fact affToStr(aff - z) --> "7.1 x - z + 2.5"
-    @fact quadToStr(aff * z) --> "7.1 x*z + 2.5 z"
+    @test affToStr(aff + z) == "7.1 x + z + 2.5"
+    @test affToStr(aff - z) == "7.1 x - z + 2.5"
+    @test quadToStr(aff * z) == "7.1 x*z + 2.5 z"
     @fact_throws  aff/z
-    @fact conToStr(aff ≤ z) --> "7.1 x - z $leq -2.5"
-    @fact conToStr(aff == z) --> "7.1 x - z $eq -2.5"
-    @fact conToStr(aff ≥ z) --> "7.1 x - z $geq -2.5"
-    @fact conToStr(aff - 7.1 * x ≤ 0) --> "0 $leq -2.5"
-    @fact conToStr(aff - 7.1 * x == 0) --> "0 $eq -2.5"
-    @fact conToStr(aff - 7.1 * x ≥ 0) --> "0 $geq -2.5"
-    @fact conToStr(@LinearConstraint(aff ≤ z)) --> "7.1 x - z $leq -2.5"
-    @fact conToStr(@LinearConstraint(aff == z)) --> "7.1 x - z $eq -2.5"
-    @fact conToStr(@LinearConstraint(aff ≥ z)) --> "7.1 x - z $geq -2.5"
-    @fact conToStr(@LinearConstraint(aff - 7.1 * x ≤ 0)) --> "0 $leq -2.5"
-    @fact conToStr(@LinearConstraint(aff - 7.1 * x == 0)) --> "0 $eq -2.5"
-    @fact conToStr(@LinearConstraint(aff - 7.1 * x ≥ 0)) --> "0 $geq -2.5"
+    @test conToStr(aff ≤ z) == "7.1 x - z $leq -2.5"
+    @test conToStr(aff == z) == "7.1 x - z $eq -2.5"
+    @test conToStr(aff ≥ z) == "7.1 x - z $geq -2.5"
+    @test conToStr(aff - 7.1 * x ≤ 0) == "0 $leq -2.5"
+    @test conToStr(aff - 7.1 * x == 0) == "0 $eq -2.5"
+    @test conToStr(aff - 7.1 * x ≥ 0) == "0 $geq -2.5"
+    @test conToStr(@LinearConstraint(aff ≤ z)) == "7.1 x - z $leq -2.5"
+    @test conToStr(@LinearConstraint(aff == z)) == "7.1 x - z $eq -2.5"
+    @test conToStr(@LinearConstraint(aff ≥ z)) == "7.1 x - z $geq -2.5"
+    @test conToStr(@LinearConstraint(aff - 7.1 * x ≤ 0)) == "0 $leq -2.5"
+    @test conToStr(@LinearConstraint(aff - 7.1 * x == 0)) == "0 $eq -2.5"
+    @test conToStr(@LinearConstraint(aff - 7.1 * x ≥ 0)) == "0 $geq -2.5"
     # 4-3 AffExpr--Norm
-    @fact exprToStr(aff + nrm) --> "√(w² + (-w + 1)²) + 7.1 x + 2.5"
-    @fact exprToStr(aff - nrm) --> "-1.0 √(w² + (-w + 1)²) + 7.1 x + 2.5"
+    @test exprToStr(aff + nrm) == "√(w² + (-w + 1)²) + 7.1 x + 2.5"
+    @test exprToStr(aff - nrm) == "-1.0 √(w² + (-w + 1)²) + 7.1 x + 2.5"
     @fact_throws aff * nrm
     @fact_throws aff / nrm
     @fact_throws @SOCConstraint(aff ≤ nrm)
     @fact_throws @SOCConstraint(aff == nrm)
-    @fact conToStr(@SOCConstraint(aff ≥ nrm)) --> "√(w² + (-w + 1)²) $leq 7.1 x + 2.5"
+    @test conToStr(@SOCConstraint(aff ≥ nrm)) == "√(w² + (-w + 1)²) $leq 7.1 x + 2.5"
     # 4-4 AffExpr--AffExpr
-    @fact affToStr(aff + aff2) --> "7.1 x + 1.2 y + 3.7"
-    @fact affToStr(aff - aff2) --> "7.1 x - 1.2 y + 1.3"
-    @fact quadToStr(aff * aff2) --> "8.52 x*y + 3 y + 8.52 x + 3"
-    @fact quadToStr((x+x)*(x+3)) --> quadToStr((x+3)*(x+x))  # Issue #288
+    @test affToStr(aff + aff2) == "7.1 x + 1.2 y + 3.7"
+    @test affToStr(aff - aff2) == "7.1 x - 1.2 y + 1.3"
+    @test quadToStr(aff * aff2) == "8.52 x*y + 3 y + 8.52 x + 3"
+    @test quadToStr((x+x)*(x+3)) == quadToStr((x+3)*(x+x))  # Issue #288
     @fact_throws  aff/aff2
-    @fact conToStr(aff ≤ aff2) --> "7.1 x - 1.2 y $leq -1.3"
-    @fact conToStr(aff == aff2) --> "7.1 x - 1.2 y $eq -1.3"
-    @fact conToStr(aff ≥ aff2) --> "7.1 x - 1.2 y $geq -1.3"
-    @fact conToStr(aff-aff ≤ 0) --> "0 $leq 0"
-    @fact conToStr(aff-aff == 0) --> "0 $eq 0"
-    @fact conToStr(aff-aff ≥ 0) --> "0 $geq 0"
-    @fact conToStr(@LinearConstraint(aff ≤ aff2)) --> "7.1 x - 1.2 y $leq -1.3"
-    @fact conToStr(@LinearConstraint(aff == aff2)) --> "7.1 x - 1.2 y $eq -1.3"
-    @fact conToStr(@LinearConstraint(aff ≥ aff2)) --> "7.1 x - 1.2 y $geq -1.3"
-    @fact conToStr(@LinearConstraint(aff-aff ≤ 0)) --> "0 $leq 0"
-    @fact conToStr(@LinearConstraint(aff-aff == 0)) --> "0 $eq 0"
-    @fact conToStr(@LinearConstraint(aff-aff ≥ 0)) --> "0 $geq 0"
+    @test conToStr(aff ≤ aff2) == "7.1 x - 1.2 y $leq -1.3"
+    @test conToStr(aff == aff2) == "7.1 x - 1.2 y $eq -1.3"
+    @test conToStr(aff ≥ aff2) == "7.1 x - 1.2 y $geq -1.3"
+    @test conToStr(aff-aff ≤ 0) == "0 $leq 0"
+    @test conToStr(aff-aff == 0) == "0 $eq 0"
+    @test conToStr(aff-aff ≥ 0) == "0 $geq 0"
+    @test conToStr(@LinearConstraint(aff ≤ aff2)) == "7.1 x - 1.2 y $leq -1.3"
+    @test conToStr(@LinearConstraint(aff == aff2)) == "7.1 x - 1.2 y $eq -1.3"
+    @test conToStr(@LinearConstraint(aff ≥ aff2)) == "7.1 x - 1.2 y $geq -1.3"
+    @test conToStr(@LinearConstraint(aff-aff ≤ 0)) == "0 $leq 0"
+    @test conToStr(@LinearConstraint(aff-aff == 0)) == "0 $eq 0"
+    @test conToStr(@LinearConstraint(aff-aff ≥ 0)) == "0 $geq 0"
     # 4-5 AffExpr--QuadExpr
-    @fact quadToStr(aff2 + q) --> "2.5 y*z + 1.2 y + 7.1 x + 3.7"
-    @fact quadToStr(aff2 - q) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3"
+    @test quadToStr(aff2 + q) == "2.5 y*z + 1.2 y + 7.1 x + 3.7"
+    @test quadToStr(aff2 - q) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3"
     @fact_throws  aff2 * q
     @fact_throws  aff2 / q
-    @fact conToStr(aff2 ≤ q) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $leq 0"
-    @fact conToStr(aff2 == q) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $eq 0"
-    @fact conToStr(aff2 ≥ q) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $geq 0"
-    @fact conToStr(@QuadConstraint(aff2 ≤ q)) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $leq 0"
-    @fact conToStr(@QuadConstraint(aff2 == q)) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $eq 0"
-    @fact conToStr(@QuadConstraint(aff2 ≥ q)) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $geq 0"
+    @test conToStr(aff2 ≤ q) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $leq 0"
+    @test conToStr(aff2 == q) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $eq 0"
+    @test conToStr(aff2 ≥ q) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $geq 0"
+    @test conToStr(@QuadConstraint(aff2 ≤ q)) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $leq 0"
+    @test conToStr(@QuadConstraint(aff2 == q)) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $eq 0"
+    @test conToStr(@QuadConstraint(aff2 ≥ q)) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $geq 0"
     # 4-6 AffExpr--SOCExpr
-    @fact exprToStr(aff + socexpr) --> "1.5 √(w² + (-w + 1)²) + 7.1 x - w + 0.5"
-    @fact exprToStr(aff - socexpr) --> "-1.5 √(w² + (-w + 1)²) + 7.1 x + w + 4.5"
+    @test exprToStr(aff + socexpr) == "1.5 √(w² + (-w + 1)²) + 7.1 x - w + 0.5"
+    @test exprToStr(aff - socexpr) == "-1.5 √(w² + (-w + 1)²) + 7.1 x + w + 4.5"
     @fact_throws aff * socexpr
     @fact_throws aff / socexpr
     @fact_throws @SOCConstraint(aff ≤ socexpr)
     @fact_throws @SOCConstraint(aff == socexpr)
-    @fact conToStr(@SOCConstraint(aff ≥ socexpr)) --> "1.5 √(w² + (-w + 1)²) $leq 7.1 x + w + 4.5"
+    @test conToStr(@SOCConstraint(aff ≥ socexpr)) == "1.5 √(w² + (-w + 1)²) $leq 7.1 x + w + 4.5"
     end
 
     # 5. QuadExpr
-    context("QuadExpr--???") do
+    @testset "QuadExpr--???" begin
     # 5-0 QuadExpr unary
-    @fact quadToStr(+q) --> "2.5 y*z + 7.1 x + 2.5"
-    @fact quadToStr(-q) --> "-2.5 y*z - 7.1 x - 2.5"
+    @test quadToStr(+q) == "2.5 y*z + 7.1 x + 2.5"
+    @test quadToStr(-q) == "-2.5 y*z - 7.1 x - 2.5"
     # 5-1 QuadExpr--Number
-    @fact quadToStr(q + 1.5) --> "2.5 y*z + 7.1 x + 4"
-    @fact quadToStr(q - 1.5) --> "2.5 y*z + 7.1 x + 1"
-    @fact quadToStr(q * 2) --> "5 y*z + 14.2 x + 5"
-    @fact quadToStr(q / 2) --> "1.25 y*z + 3.55 x + 1.25"
-    @fact conToStr(q ≥ 1) --> "2.5 y*z + 7.1 x + 1.5 $geq 0"
-    @fact conToStr(q == 1) --> "2.5 y*z + 7.1 x + 1.5 $eq 0"
-    @fact conToStr(q ≤ 1) --> "2.5 y*z + 7.1 x + 1.5 $leq 0"
-    @fact conToStr(@QuadConstraint(aff2 ≤ q)) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $leq 0"
-    @fact conToStr(@QuadConstraint(aff2 == q)) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $eq 0"
-    @fact conToStr(@QuadConstraint(aff2 ≥ q)) --> "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $geq 0"
+    @test quadToStr(q + 1.5) == "2.5 y*z + 7.1 x + 4"
+    @test quadToStr(q - 1.5) == "2.5 y*z + 7.1 x + 1"
+    @test quadToStr(q * 2) == "5 y*z + 14.2 x + 5"
+    @test quadToStr(q / 2) == "1.25 y*z + 3.55 x + 1.25"
+    @test conToStr(q ≥ 1) == "2.5 y*z + 7.1 x + 1.5 $geq 0"
+    @test conToStr(q == 1) == "2.5 y*z + 7.1 x + 1.5 $eq 0"
+    @test conToStr(q ≤ 1) == "2.5 y*z + 7.1 x + 1.5 $leq 0"
+    @test conToStr(@QuadConstraint(aff2 ≤ q)) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $leq 0"
+    @test conToStr(@QuadConstraint(aff2 == q)) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $eq 0"
+    @test conToStr(@QuadConstraint(aff2 ≥ q)) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $geq 0"
     # 5-2 QuadExpr--Variable
-    @fact quadToStr(q + w) --> "2.5 y*z + 7.1 x + w + 2.5"
-    @fact quadToStr(q - w) --> "2.5 y*z + 7.1 x - w + 2.5"
+    @test quadToStr(q + w) == "2.5 y*z + 7.1 x + w + 2.5"
+    @test quadToStr(q - w) == "2.5 y*z + 7.1 x - w + 2.5"
     @fact_throws q*w
     @fact_throws q/w
-    @fact conToStr(q ≤ w) --> "2.5 y*z + 7.1 x - w + 2.5 $leq 0"
-    @fact conToStr(q == w) --> "2.5 y*z + 7.1 x - w + 2.5 $eq 0"
-    @fact conToStr(q ≥ w) --> "2.5 y*z + 7.1 x - w + 2.5 $geq 0"
-    @fact conToStr(@QuadConstraint(q ≤ w)) --> "2.5 y*z + 7.1 x - w + 2.5 $leq 0"
-    @fact conToStr(@QuadConstraint(q == w)) --> "2.5 y*z + 7.1 x - w + 2.5 $eq 0"
-    @fact conToStr(@QuadConstraint(q ≥ w)) --> "2.5 y*z + 7.1 x - w + 2.5 $geq 0"
+    @test conToStr(q ≤ w) == "2.5 y*z + 7.1 x - w + 2.5 $leq 0"
+    @test conToStr(q == w) == "2.5 y*z + 7.1 x - w + 2.5 $eq 0"
+    @test conToStr(q ≥ w) == "2.5 y*z + 7.1 x - w + 2.5 $geq 0"
+    @test conToStr(@QuadConstraint(q ≤ w)) == "2.5 y*z + 7.1 x - w + 2.5 $leq 0"
+    @test conToStr(@QuadConstraint(q == w)) == "2.5 y*z + 7.1 x - w + 2.5 $eq 0"
+    @test conToStr(@QuadConstraint(q ≥ w)) == "2.5 y*z + 7.1 x - w + 2.5 $geq 0"
     # 5-3 QuadExpr--Norm
     @fact_throws q + nrm
     @fact_throws q - nrm
@@ -366,27 +367,27 @@ facts("[operator] Testing basic operator overloads") do
     @fact_throws @SOCConstraint(q == nrm)
     @fact_throws @SOCConstraint(q ≥ nrm)
     # 5-4 QuadExpr--AffExpr
-    @fact quadToStr(q + aff2) --> "2.5 y*z + 7.1 x + 1.2 y + 3.7"
-    @fact quadToStr(q - aff2) --> "2.5 y*z + 7.1 x - 1.2 y + 1.3"
+    @test quadToStr(q + aff2) == "2.5 y*z + 7.1 x + 1.2 y + 3.7"
+    @test quadToStr(q - aff2) == "2.5 y*z + 7.1 x - 1.2 y + 1.3"
     @fact_throws  q * aff2
     @fact_throws  q / aff2
-    @fact conToStr(q ≤ aff2) --> "2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
-    @fact conToStr(q == aff2) --> "2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
-    @fact conToStr(q ≥ aff2) --> "2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
-    @fact conToStr(@QuadConstraint(q ≤ aff2)) --> "2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
-    @fact conToStr(@QuadConstraint(q == aff2)) --> "2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
-    @fact conToStr(@QuadConstraint(q ≥ aff2)) --> "2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
+    @test conToStr(q ≤ aff2) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
+    @test conToStr(q == aff2) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
+    @test conToStr(q ≥ aff2) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
+    @test conToStr(@QuadConstraint(q ≤ aff2)) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
+    @test conToStr(@QuadConstraint(q == aff2)) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
+    @test conToStr(@QuadConstraint(q ≥ aff2)) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
     # 5-5 QuadExpr--QuadExpr
-    @fact quadToStr(q + q2) --> "8 x*z + 2.5 y*z + 7.1 x + 1.2 y + 3.7"
-    @fact quadToStr(q - q2) --> "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3"
+    @test quadToStr(q + q2) == "8 x*z + 2.5 y*z + 7.1 x + 1.2 y + 3.7"
+    @test quadToStr(q - q2) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3"
     @fact_throws  q * q2
     @fact_throws  q / q2
-    @fact conToStr(q ≤ q2) --> "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
-    @fact conToStr(q == q2) --> "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
-    @fact conToStr(q ≥ q2) --> "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
-    @fact conToStr(@QuadConstraint(q ≤ q2)) --> "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
-    @fact conToStr(@QuadConstraint(q == q2)) --> "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
-    @fact conToStr(@QuadConstraint(q ≥ q2)) --> "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
+    @test conToStr(q ≤ q2) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
+    @test conToStr(q == q2) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
+    @test conToStr(q ≥ q2) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
+    @test conToStr(@QuadConstraint(q ≤ q2)) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
+    @test conToStr(@QuadConstraint(q == q2)) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
+    @test conToStr(@QuadConstraint(q ≥ q2)) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
     # 4-6 QuadExpr--SOCExpr
     @fact_throws q + socexpr
     @fact_throws q - socexpr
@@ -398,24 +399,24 @@ facts("[operator] Testing basic operator overloads") do
     end
 
     # 6. SOCExpr tests
-    context("SOCExpr--???") do
+    @testset "SOCExpr--???" begin
     # 6-0 SOCExpr unary
-    @fact exprToStr(+socexpr) --> "1.5 √(w² + (-w + 1)²) - w - 2"
-    @fact exprToStr(-socexpr) --> "-1.5 √(w² + (-w + 1)²) + w + 2"
+    @test exprToStr(+socexpr) == "1.5 √(w² + (-w + 1)²) - w - 2"
+    @test exprToStr(-socexpr) == "-1.5 √(w² + (-w + 1)²) + w + 2"
     # 6-1 SOCExpr--Number
-    @fact exprToStr(socexpr + 1.5) --> "1.5 √(w² + (-w + 1)²) - w - 0.5"
-    @fact exprToStr(socexpr - 1.5) --> "1.5 √(w² + (-w + 1)²) - w - 3.5"
-    @fact exprToStr(socexpr * 1.5) --> "2.25 √(w² + (-w + 1)²) - 1.5 w - 3"
-    @fact exprToStr(socexpr / 1.5) --> "√(w² + (-w + 1)²) - 0.6666666666666666 w - 1.3333333333333333"
-    @fact conToStr(@SOCConstraint(socexpr ≤ 1.5)) --> "1.5 √(w² + (-w + 1)²) $leq w + 3.5"
+    @test exprToStr(socexpr + 1.5) == "1.5 √(w² + (-w + 1)²) - w - 0.5"
+    @test exprToStr(socexpr - 1.5) == "1.5 √(w² + (-w + 1)²) - w - 3.5"
+    @test exprToStr(socexpr * 1.5) == "2.25 √(w² + (-w + 1)²) - 1.5 w - 3"
+    @test exprToStr(socexpr / 1.5) == "√(w² + (-w + 1)²) - 0.6666666666666666 w - 1.3333333333333333"
+    @test conToStr(@SOCConstraint(socexpr ≤ 1.5)) == "1.5 √(w² + (-w + 1)²) $leq w + 3.5"
     @fact_throws @SOCConstraint(socexpr == 1.5)
     @fact_throws @SOCConstraint(socexpr ≥ 1.5)
     # 6-2 SOCExpr--Variable
-    @fact exprToStr(socexpr + y) --> "1.5 √(w² + (-w + 1)²) - w + y - 2"
-    @fact exprToStr(socexpr - y) --> "1.5 √(w² + (-w + 1)²) - w - y - 2"
+    @test exprToStr(socexpr + y) == "1.5 √(w² + (-w + 1)²) - w + y - 2"
+    @test exprToStr(socexpr - y) == "1.5 √(w² + (-w + 1)²) - w - y - 2"
     @fact_throws socexpr * y
     @fact_throws socexpr / y
-    @fact conToStr(@SOCConstraint(socexpr ≤ y)) --> "1.5 √(w² + (-w + 1)²) $leq w + y + 2"
+    @test conToStr(@SOCConstraint(socexpr ≤ y)) == "1.5 √(w² + (-w + 1)²) $leq w + y + 2"
     @fact_throws conToStr(socexpr == y)
     @fact_throws conToStr(socexpr ≥ y)
     # 6-3 SOCExpr--Norm
@@ -427,11 +428,11 @@ facts("[operator] Testing basic operator overloads") do
     @fact_throws @SOCConstraint(socexpr == nrm)
     @fact_throws @SOCConstraint(socexpr ≥ nrm)
     # 6-4 SOCExpr--AffExpr
-    @fact exprToStr(socexpr + aff) --> "1.5 √(w² + (-w + 1)²) - w + 7.1 x + 0.5"
-    @fact exprToStr(socexpr - aff) --> "1.5 √(w² + (-w + 1)²) - w - 7.1 x - 4.5"
+    @test exprToStr(socexpr + aff) == "1.5 √(w² + (-w + 1)²) - w + 7.1 x + 0.5"
+    @test exprToStr(socexpr - aff) == "1.5 √(w² + (-w + 1)²) - w - 7.1 x - 4.5"
     @fact_throws socexpr * aff
     @fact_throws socexpr / aff
-    @fact conToStr(@SOCConstraint(socexpr ≤ aff)) --> "1.5 √(w² + (-w + 1)²) $leq w + 7.1 x + 4.5"
+    @test conToStr(@SOCConstraint(socexpr ≤ aff)) == "1.5 √(w² + (-w + 1)²) $leq w + 7.1 x + 4.5"
     @fact_throws @SOCConstraint(socexpr == aff)
     @fact_throws @SOCConstraint(socexpr ≥ aff)
     # 6-5 SOCExpr--QuadExpr
