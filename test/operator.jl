@@ -19,7 +19,9 @@ const leq = JuMP.repl[:leq]
 const geq = JuMP.repl[:geq]
 const  eq = JuMP.repl[:eq]
 
-@testset "[operator] Operator overloads" begin
+@testset "operator.jl" begin
+
+@testset "overloads" begin
     m = Model()
     @defVar(m, w)
     @defVar(m, x)
@@ -57,7 +59,7 @@ const  eq = JuMP.repl[:eq]
     @test affToStr(4.13 + w) == "w + 4.13"
     @test affToStr(3.16 - w) == "-w + 3.16"
     @test affToStr(5.23 * w) == "5.23 w"
-    @fact_throws  2.94 / w
+    @test_throws ErrorException 2.94 / w
     @test conToStr(2.1 ≤ w) == "w $geq 2.1"
     @test conToStr(2.1 == w) == "w $eq 2.1"
     @test conToStr(2.1 ≥ w) == "w $leq 2.1"
@@ -68,15 +70,15 @@ const  eq = JuMP.repl[:eq]
     @test exprToStr(4.13 + nrm) == "√(w² + (-w + 1)²) + 4.13"
     @test exprToStr(3.16 - nrm) == "-1.0 √(w² + (-w + 1)²) + 3.16"
     @test exprToStr(5.23 * nrm) == "5.23 √(w² + (-w + 1)²)"
-    @fact_throws 2.94 / nrm
-    @fact_throws @SOCConstraint(2.1 ≤ nrm)
-    @fact_throws @SOCConstraint(2.1 == nrm)
+    @test_throws MethodError 2.94 / nrm
+    @test_throws ErrorException @SOCConstraint(2.1 ≤ nrm)
+    @test_throws ErrorException @SOCConstraint(2.1 == nrm)
     @test conToStr(@SOCConstraint(2.1 ≥ nrm)) == "√(w² + (-w + 1)²) $leq 2.1"
     # 1-4 Number--AffExpr
     @test affToStr(1.5 + aff) == "7.1 x + 4"
     @test affToStr(1.5 - aff) == "-7.1 x - 1"
     @test affToStr(2 * aff) == "14.2 x + 5"
-    @fact_throws  2 / aff
+    @test_throws ErrorException 2 / aff
     @test conToStr(1 ≤ aff) == "7.1 x $geq -1.5"
     @test conToStr(1 == aff) == "7.1 x $eq -1.5"
     @test conToStr(1 ≥ aff) == "7.1 x $leq -1.5"
@@ -87,7 +89,7 @@ const  eq = JuMP.repl[:eq]
     @test quadToStr(1.5 + q) == "2.5 y*z + 7.1 x + 4"
     @test quadToStr(1.5 - q) == "-2.5 y*z - 7.1 x - 1"
     @test quadToStr(2 * q) == "5 y*z + 14.2 x + 5"
-    @fact_throws  2 / q
+    @test_throws ErrorException 2 / q
     @test conToStr(1 ≤ q) == "2.5 y*z + 7.1 x + 1.5 $geq 0"
     @test conToStr(1 == q) == "2.5 y*z + 7.1 x + 1.5 $eq 0"
     @test conToStr(1 ≥ q) == "2.5 y*z + 7.1 x + 1.5 $leq 0"
@@ -98,9 +100,9 @@ const  eq = JuMP.repl[:eq]
     @test exprToStr(1.5 + socexpr) == "1.5 √(w² + (-w + 1)²) - w - 0.5"
     @test exprToStr(1.5 - socexpr) == "-1.5 √(w² + (-w + 1)²) + w + 3.5"
     @test exprToStr(1.5 * socexpr) == "2.25 √(w² + (-w + 1)²) - 1.5 w - 3"
-    @fact_throws 1.5 / socexpr
-    @fact_throws @SOCConstraint(2.1 ≤ socexpr)
-    @fact_throws @SOCConstraint(2.1 == socexpr)
+    @test_throws MethodError 1.5 / socexpr
+    @test_throws ErrorException @SOCConstraint(2.1 ≤ socexpr)
+    @test_throws ErrorException @SOCConstraint(2.1 == socexpr)
     @test conToStr(@SOCConstraint(2.1 ≥ socexpr)) == "1.5 √(w² + (-w + 1)²) $leq w + 4.1"
     end
 
@@ -131,7 +133,7 @@ const  eq = JuMP.repl[:eq]
     @test affToStr(w - x) == "w - x"
     @test quadToStr(w * x) == "w*x"
     @test affToStr(x - x) == "0"
-    @fact_throws  w / x
+    @test_throws ErrorException w / x
     @test conToStr(w ≤ x) == "w - x $leq 0"
     @test conToStr(w == x) == "w - x $eq 0"
     @test conToStr(w ≥ x) == "w - x $geq 0"
@@ -153,16 +155,16 @@ const  eq = JuMP.repl[:eq]
     # 2-3 Variable--Norm
     @test exprToStr(w + nrm) == "√(w² + (-w + 1)²) + w"
     @test exprToStr(w - nrm) == "-1.0 √(w² + (-w + 1)²) + w"
-    @fact_throws w * nrm
-    @fact_throws w / nrm
-    @fact_throws @SOCConstraint(w ≤ nrm)
-    @fact_throws @SOCConstraint(w == nrm)
+    @test_throws MethodError w * nrm
+    @test_throws MethodError w / nrm
+    @test_throws ErrorException @SOCConstraint(w ≤ nrm)
+    @test_throws ErrorException @SOCConstraint(w == nrm)
     @test conToStr(@SOCConstraint(w ≥ nrm)) == "√(w² + (-w + 1)²) $leq w"
     # 2-4 Variable--AffExpr
     @test affToStr(z + aff) == "7.1 x + z + 2.5"
     @test affToStr(z - aff) == "-7.1 x + z - 2.5"
     @test quadToStr(z * aff) == "7.1 x*z + 2.5 z"
-    @fact_throws  z / aff
+    @test_throws ErrorException z / aff
     @test conToStr(z ≤ aff) == "-7.1 x + z $leq 2.5"
     @test conToStr(z == aff) == "-7.1 x + z $eq 2.5"
     @test conToStr(z ≥ aff) == "-7.1 x + z $geq 2.5"
@@ -178,8 +180,8 @@ const  eq = JuMP.repl[:eq]
     # 2-5 Variable--QuadExpr
     @test quadToStr(w + q) == "2.5 y*z + 7.1 x + w + 2.5"
     @test quadToStr(w - q) == "-2.5 y*z - 7.1 x + w - 2.5"
-    @fact_throws  w*q
-    @fact_throws  w/q
+    @test_throws ErrorException w*q
+    @test_throws ErrorException w/q
     @test conToStr(w ≤ q) == "-2.5 y*z - 7.1 x + w - 2.5 $leq 0"
     @test conToStr(w == q) == "-2.5 y*z - 7.1 x + w - 2.5 $eq 0"
     @test conToStr(w ≥ q) == "-2.5 y*z - 7.1 x + w - 2.5 $geq 0"
@@ -189,10 +191,10 @@ const  eq = JuMP.repl[:eq]
     # 2-6 Variable--SOCExpr
     @test exprToStr(y + socexpr) == "1.5 √(w² + (-w + 1)²) - w + y - 2"
     @test exprToStr(y - socexpr) == "-1.5 √(w² + (-w + 1)²) + w + y + 2"
-    @fact_throws y * socexpr
-    @fact_throws y / socexpr
-    @fact_throws @SOCConstraint(y ≤ socexpr)
-    @fact_throws @SOCConstraint(y == socexpr)
+    @test_throws MethodError y * socexpr
+    @test_throws MethodError y / socexpr
+    @test_throws ErrorException @SOCConstraint(y ≤ socexpr)
+    @test_throws ErrorException @SOCConstraint(y == socexpr)
     @test conToStr(@SOCConstraint(y ≥ socexpr)) == "1.5 √(w² + (-w + 1)²) $leq y + w + 2"
     end
 
@@ -207,48 +209,48 @@ const  eq = JuMP.repl[:eq]
     @test exprToStr(nrm * 1.5) == "1.5 √(w² + (-w + 1)²)"
     @test exprToStr(nrm / 1.5) == "0.6666666666666666 √(w² + (-w + 1)²)"
     @test conToStr(@SOCConstraint(nrm ≤ 1.5)) == "√(w² + (-w + 1)²) $leq 1.5"
-    @fact_throws @SOCConstraint(nrm == 1.5)
-    @fact_throws @SOCConstraint(nrm ≥ 1.5)
+    @test_throws ErrorException @SOCConstraint(nrm == 1.5)
+    @test_throws ErrorException @SOCConstraint(nrm ≥ 1.5)
     # 3-2 Norm--Variable
     @test exprToStr(nrm + w) == "√(w² + (-w + 1)²) + w"
     @test exprToStr(nrm - w) == "√(w² + (-w + 1)²) - w"
-    @fact_throws nrm * w
-    @fact_throws nrm / w
+    @test_throws MethodError nrm * w
+    @test_throws MethodError nrm / w
     @test conToStr(@SOCConstraint(nrm ≤ w)) == "√(w² + (-w + 1)²) $leq w"
-    @fact_throws conToStr(nrm == w)
-    @fact_throws conToStr(nrm ≥ w)
+    @test_throws MethodError conToStr(nrm == w)
+    @test_throws MethodError conToStr(nrm ≥ w)
     # 3-3 Norm--Norm
-    @fact_throws nrm + nrm
-    @fact_throws nrm - nrm
-    @fact_throws nrm * nrm
-    @fact_throws nrm / nrm
-    @fact_throws @SOCConstraint(nrm ≤ nrm)
-    @fact_throws @SOCConstraint(nrm == nrm)
-    @fact_throws @SOCConstraint(nrm ≥ nrm)
+    @test_throws MethodError nrm + nrm
+    @test_throws MethodError nrm - nrm
+    @test_throws MethodError nrm * nrm
+    @test_throws MethodError nrm / nrm
+    @test_throws MethodError @SOCConstraint(nrm ≤ nrm)
+    @test_throws MethodError @SOCConstraint(nrm == nrm)
+    @test_throws MethodError @SOCConstraint(nrm ≥ nrm)
     # 3-4 Norm--AffExpr
     @test exprToStr(nrm + aff) == "√(w² + (-w + 1)²) + 7.1 x + 2.5"
     @test exprToStr(nrm - aff) == "√(w² + (-w + 1)²) - 7.1 x - 2.5"
-    @fact_throws nrm * aff
-    @fact_throws nrm / aff
+    @test_throws MethodError nrm * aff
+    @test_throws MethodError nrm / aff
     @test conToStr(@SOCConstraint(nrm ≤ aff)) == "√(w² + (-w + 1)²) $leq 7.1 x + 2.5"
-    @fact_throws @SOCConstraint(nrm == aff)
-    @fact_throws @SOCConstraint(nrm ≥ aff)
+    @test_throws ErrorException @SOCConstraint(nrm == aff)
+    @test_throws ErrorException @SOCConstraint(nrm ≥ aff)
     # 3-5 Norm--QuadExpr
-    @fact_throws nrm + q
-    @fact_throws nrm - q
-    @fact_throws nrm * q
-    @fact_throws nrm / q
-    @fact_throws @SOCConstraint(nrm ≤ q)
-    @fact_throws @SOCConstraint(nrm == q)
-    @fact_throws @SOCConstraint(nrm ≥ q)
+    @test_throws MethodError nrm + q
+    @test_throws MethodError nrm - q
+    @test_throws MethodError nrm * q
+    @test_throws MethodError nrm / q
+    @test_throws MethodError @SOCConstraint(nrm ≤ q)
+    @test_throws MethodError @SOCConstraint(nrm == q)
+    @test_throws MethodError @SOCConstraint(nrm ≥ q)
     # 3-6 Norm--SOCExpr
-    @fact_throws nrm + socexpr
-    @fact_throws nrm - socexpr
-    @fact_throws nrm * socexpr
-    @fact_throws nrm / socexpr
-    @fact_throws @SOCConstraint(nrm ≤ socexpr)
-    @fact_throws @SOCConstraint(nrm == socexpr)
-    @fact_throws @SOCConstraint(nrm ≥ socexpr)
+    @test_throws MethodError nrm + socexpr
+    @test_throws MethodError nrm - socexpr
+    @test_throws MethodError nrm * socexpr
+    @test_throws MethodError nrm / socexpr
+    @test_throws MethodError @SOCConstraint(nrm ≤ socexpr)
+    @test_throws MethodError @SOCConstraint(nrm == socexpr)
+    @test_throws MethodError @SOCConstraint(nrm ≥ socexpr)
     end
 
     # 4. AffExpr tests
@@ -271,7 +273,7 @@ const  eq = JuMP.repl[:eq]
     @test affToStr(aff + z) == "7.1 x + z + 2.5"
     @test affToStr(aff - z) == "7.1 x - z + 2.5"
     @test quadToStr(aff * z) == "7.1 x*z + 2.5 z"
-    @fact_throws  aff/z
+    @test_throws ErrorException aff/z
     @test conToStr(aff ≤ z) == "7.1 x - z $leq -2.5"
     @test conToStr(aff == z) == "7.1 x - z $eq -2.5"
     @test conToStr(aff ≥ z) == "7.1 x - z $geq -2.5"
@@ -287,17 +289,17 @@ const  eq = JuMP.repl[:eq]
     # 4-3 AffExpr--Norm
     @test exprToStr(aff + nrm) == "√(w² + (-w + 1)²) + 7.1 x + 2.5"
     @test exprToStr(aff - nrm) == "-1.0 √(w² + (-w + 1)²) + 7.1 x + 2.5"
-    @fact_throws aff * nrm
-    @fact_throws aff / nrm
-    @fact_throws @SOCConstraint(aff ≤ nrm)
-    @fact_throws @SOCConstraint(aff == nrm)
+    @test_throws MethodError aff * nrm
+    @test_throws MethodError aff / nrm
+    @test_throws ErrorException @SOCConstraint(aff ≤ nrm)
+    @test_throws ErrorException @SOCConstraint(aff == nrm)
     @test conToStr(@SOCConstraint(aff ≥ nrm)) == "√(w² + (-w + 1)²) $leq 7.1 x + 2.5"
     # 4-4 AffExpr--AffExpr
     @test affToStr(aff + aff2) == "7.1 x + 1.2 y + 3.7"
     @test affToStr(aff - aff2) == "7.1 x - 1.2 y + 1.3"
     @test quadToStr(aff * aff2) == "8.52 x*y + 3 y + 8.52 x + 3"
     @test quadToStr((x+x)*(x+3)) == quadToStr((x+3)*(x+x))  # Issue #288
-    @fact_throws  aff/aff2
+    @test_throws ErrorException aff/aff2
     @test conToStr(aff ≤ aff2) == "7.1 x - 1.2 y $leq -1.3"
     @test conToStr(aff == aff2) == "7.1 x - 1.2 y $eq -1.3"
     @test conToStr(aff ≥ aff2) == "7.1 x - 1.2 y $geq -1.3"
@@ -313,8 +315,8 @@ const  eq = JuMP.repl[:eq]
     # 4-5 AffExpr--QuadExpr
     @test quadToStr(aff2 + q) == "2.5 y*z + 1.2 y + 7.1 x + 3.7"
     @test quadToStr(aff2 - q) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3"
-    @fact_throws  aff2 * q
-    @fact_throws  aff2 / q
+    @test_throws ErrorException aff2 * q
+    @test_throws ErrorException aff2 / q
     @test conToStr(aff2 ≤ q) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $leq 0"
     @test conToStr(aff2 == q) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $eq 0"
     @test conToStr(aff2 ≥ q) == "-2.5 y*z + 1.2 y - 7.1 x - 1.3 $geq 0"
@@ -324,10 +326,10 @@ const  eq = JuMP.repl[:eq]
     # 4-6 AffExpr--SOCExpr
     @test exprToStr(aff + socexpr) == "1.5 √(w² + (-w + 1)²) + 7.1 x - w + 0.5"
     @test exprToStr(aff - socexpr) == "-1.5 √(w² + (-w + 1)²) + 7.1 x + w + 4.5"
-    @fact_throws aff * socexpr
-    @fact_throws aff / socexpr
-    @fact_throws @SOCConstraint(aff ≤ socexpr)
-    @fact_throws @SOCConstraint(aff == socexpr)
+    @test_throws MethodError aff * socexpr
+    @test_throws MethodError aff / socexpr
+    @test_throws ErrorException @SOCConstraint(aff ≤ socexpr)
+    @test_throws ErrorException @SOCConstraint(aff == socexpr)
     @test conToStr(@SOCConstraint(aff ≥ socexpr)) == "1.5 √(w² + (-w + 1)²) $leq 7.1 x + w + 4.5"
     end
 
@@ -350,8 +352,8 @@ const  eq = JuMP.repl[:eq]
     # 5-2 QuadExpr--Variable
     @test quadToStr(q + w) == "2.5 y*z + 7.1 x + w + 2.5"
     @test quadToStr(q - w) == "2.5 y*z + 7.1 x - w + 2.5"
-    @fact_throws q*w
-    @fact_throws q/w
+    @test_throws ErrorException q*w
+    @test_throws ErrorException q/w
     @test conToStr(q ≤ w) == "2.5 y*z + 7.1 x - w + 2.5 $leq 0"
     @test conToStr(q == w) == "2.5 y*z + 7.1 x - w + 2.5 $eq 0"
     @test conToStr(q ≥ w) == "2.5 y*z + 7.1 x - w + 2.5 $geq 0"
@@ -359,18 +361,18 @@ const  eq = JuMP.repl[:eq]
     @test conToStr(@QuadConstraint(q == w)) == "2.5 y*z + 7.1 x - w + 2.5 $eq 0"
     @test conToStr(@QuadConstraint(q ≥ w)) == "2.5 y*z + 7.1 x - w + 2.5 $geq 0"
     # 5-3 QuadExpr--Norm
-    @fact_throws q + nrm
-    @fact_throws q - nrm
-    @fact_throws q * nrm
-    @fact_throws q / nrm
-    @fact_throws @SOCConstraint(q ≤ nrm)
-    @fact_throws @SOCConstraint(q == nrm)
-    @fact_throws @SOCConstraint(q ≥ nrm)
+    @test_throws MethodError q + nrm
+    @test_throws MethodError q - nrm
+    @test_throws MethodError q * nrm
+    @test_throws MethodError q / nrm
+    @test_throws MethodError @SOCConstraint(q ≤ nrm)
+    @test_throws MethodError @SOCConstraint(q == nrm)
+    @test_throws MethodError @SOCConstraint(q ≥ nrm)
     # 5-4 QuadExpr--AffExpr
     @test quadToStr(q + aff2) == "2.5 y*z + 7.1 x + 1.2 y + 3.7"
     @test quadToStr(q - aff2) == "2.5 y*z + 7.1 x - 1.2 y + 1.3"
-    @fact_throws  q * aff2
-    @fact_throws  q / aff2
+    @test_throws ErrorException  q * aff2
+    @test_throws ErrorException  q / aff2
     @test conToStr(q ≤ aff2) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
     @test conToStr(q == aff2) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
     @test conToStr(q ≥ aff2) == "2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
@@ -380,8 +382,8 @@ const  eq = JuMP.repl[:eq]
     # 5-5 QuadExpr--QuadExpr
     @test quadToStr(q + q2) == "8 x*z + 2.5 y*z + 7.1 x + 1.2 y + 3.7"
     @test quadToStr(q - q2) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3"
-    @fact_throws  q * q2
-    @fact_throws  q / q2
+    @test_throws ErrorException  q * q2
+    @test_throws ErrorException  q / q2
     @test conToStr(q ≤ q2) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $leq 0"
     @test conToStr(q == q2) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
     @test conToStr(q ≥ q2) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
@@ -389,13 +391,13 @@ const  eq = JuMP.repl[:eq]
     @test conToStr(@QuadConstraint(q == q2)) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $eq 0"
     @test conToStr(@QuadConstraint(q ≥ q2)) == "-8 x*z + 2.5 y*z + 7.1 x - 1.2 y + 1.3 $geq 0"
     # 4-6 QuadExpr--SOCExpr
-    @fact_throws q + socexpr
-    @fact_throws q - socexpr
-    @fact_throws q * socexpr
-    @fact_throws q / socexpr
-    @fact_throws @SOCConstraint(q ≤ socexpr)
-    @fact_throws @SOCConstraint(q == socexpr)
-    @fact_throws @SOCConstraint(q ≥ socexpr)
+    @test_throws MethodError q + socexpr
+    @test_throws MethodError q - socexpr
+    @test_throws MethodError q * socexpr
+    @test_throws MethodError q / socexpr
+    @test_throws MethodError @SOCConstraint(q ≤ socexpr)
+    @test_throws MethodError @SOCConstraint(q == socexpr)
+    @test_throws MethodError @SOCConstraint(q ≥ socexpr)
     end
 
     # 6. SOCExpr tests
@@ -409,77 +411,81 @@ const  eq = JuMP.repl[:eq]
     @test exprToStr(socexpr * 1.5) == "2.25 √(w² + (-w + 1)²) - 1.5 w - 3"
     @test exprToStr(socexpr / 1.5) == "√(w² + (-w + 1)²) - 0.6666666666666666 w - 1.3333333333333333"
     @test conToStr(@SOCConstraint(socexpr ≤ 1.5)) == "1.5 √(w² + (-w + 1)²) $leq w + 3.5"
-    @fact_throws @SOCConstraint(socexpr == 1.5)
-    @fact_throws @SOCConstraint(socexpr ≥ 1.5)
+    @test_throws ErrorException @SOCConstraint(socexpr == 1.5)
+    @test_throws ErrorException @SOCConstraint(socexpr ≥ 1.5)
     # 6-2 SOCExpr--Variable
     @test exprToStr(socexpr + y) == "1.5 √(w² + (-w + 1)²) - w + y - 2"
     @test exprToStr(socexpr - y) == "1.5 √(w² + (-w + 1)²) - w - y - 2"
-    @fact_throws socexpr * y
-    @fact_throws socexpr / y
+    @test_throws MethodError socexpr * y
+    @test_throws MethodError socexpr / y
     @test conToStr(@SOCConstraint(socexpr ≤ y)) == "1.5 √(w² + (-w + 1)²) $leq w + y + 2"
-    @fact_throws conToStr(socexpr == y)
-    @fact_throws conToStr(socexpr ≥ y)
+    @test_throws MethodError conToStr(socexpr == y)
+    @test_throws MethodError conToStr(socexpr ≥ y)
     # 6-3 SOCExpr--Norm
-    @fact_throws socexpr + nrm
-    @fact_throws socexpr - nrm
-    @fact_throws socexpr * nrm
-    @fact_throws socexpr / nrm
-    @fact_throws @SOCConstraint(socexpr ≤ nrm)
-    @fact_throws @SOCConstraint(socexpr == nrm)
-    @fact_throws @SOCConstraint(socexpr ≥ nrm)
+    @test_throws MethodError socexpr + nrm
+    @test_throws MethodError socexpr - nrm
+    @test_throws MethodError socexpr * nrm
+    @test_throws MethodError socexpr / nrm
+    @test_throws MethodError @SOCConstraint(socexpr ≤ nrm)
+    @test_throws MethodError @SOCConstraint(socexpr == nrm)
+    @test_throws MethodError @SOCConstraint(socexpr ≥ nrm)
     # 6-4 SOCExpr--AffExpr
     @test exprToStr(socexpr + aff) == "1.5 √(w² + (-w + 1)²) - w + 7.1 x + 0.5"
     @test exprToStr(socexpr - aff) == "1.5 √(w² + (-w + 1)²) - w - 7.1 x - 4.5"
-    @fact_throws socexpr * aff
-    @fact_throws socexpr / aff
+    @test_throws MethodError socexpr * aff
+    @test_throws MethodError socexpr / aff
     @test conToStr(@SOCConstraint(socexpr ≤ aff)) == "1.5 √(w² + (-w + 1)²) $leq w + 7.1 x + 4.5"
-    @fact_throws @SOCConstraint(socexpr == aff)
-    @fact_throws @SOCConstraint(socexpr ≥ aff)
+    @test_throws ErrorException @SOCConstraint(socexpr == aff)
+    @test_throws ErrorException @SOCConstraint(socexpr ≥ aff)
     # 6-5 SOCExpr--QuadExpr
-    @fact_throws socexpr + q
-    @fact_throws socexpr - q
-    @fact_throws socexpr * q
-    @fact_throws socexpr / q
-    @fact_throws @SOCConstraint(socexpr ≤ q)
-    @fact_throws @SOCConstraint(socexpr == q)
-    @fact_throws @SOCConstraint(socexpr ≥ q)
+    @test_throws MethodError socexpr + q
+    @test_throws MethodError socexpr - q
+    @test_throws MethodError socexpr * q
+    @test_throws MethodError socexpr / q
+    @test_throws MethodError @SOCConstraint(socexpr ≤ q)
+    @test_throws MethodError @SOCConstraint(socexpr == q)
+    @test_throws MethodError @SOCConstraint(socexpr ≥ q)
     # 6-6 SOCExpr--SOCExpr
-    @fact_throws socexpr + socexpr
-    @fact_throws socexpr - socexpr
-    @fact_throws socexpr * socexpr
-    @fact_throws socexpr / socexpr
-    @fact_throws @SOCConstraint(socexpr ≤ socexpr)
-    @fact_throws @SOCConstraint(socexpr == socexpr)
-    @fact_throws @SOCConstraint(socexpr ≥ socexpr)
+    @test_throws MethodError socexpr + socexpr
+    @test_throws MethodError socexpr - socexpr
+    @test_throws MethodError socexpr * socexpr
+    @test_throws MethodError socexpr / socexpr
+    @test_throws MethodError @SOCConstraint(socexpr ≤ socexpr)
+    @test_throws MethodError @SOCConstraint(socexpr == socexpr)
+    @test_throws MethodError @SOCConstraint(socexpr ≥ socexpr)
     end
 end
 
-facts("[operator] Higher-level operators") do
-context("sum") do
-    sum_m = Model()
-    @defVar(sum_m, 0 ≤ matrix[1:3,1:3] ≤ 1, start = 1)
-    # sum(j::JuMPArray{Variable})
-    @fact affToStr(sum(matrix)) --> "matrix[1,1] + matrix[2,1] + matrix[3,1] + matrix[1,2] + matrix[2,2] + matrix[3,2] + matrix[1,3] + matrix[2,3] + matrix[3,3]"
-    # sum(j::JuMPArray{Variable}) in a macro
-    @setObjective(sum_m, Max, sum(matrix))
-    @fact quadToStr(sum_m.obj) --> "matrix[1,1] + matrix[2,1] + matrix[3,1] + matrix[1,2] + matrix[2,2] + matrix[3,2] + matrix[1,3] + matrix[2,3] + matrix[3,3]"
+@testset "Higher-level operators" begin
+    @testset "sum" begin
+        sum_m = Model()
+        @defVar(sum_m, 0 ≤ matrix[1:3,1:3] ≤ 1, start = 1)
+        # sum(j::JuMPArray{Variable})
+        @test affToStr(sum(matrix)) == "matrix[1,1] + matrix[2,1] + matrix[3,1] + matrix[1,2] + matrix[2,2] + matrix[3,2] + matrix[1,3] + matrix[2,3] + matrix[3,3]"
+        # sum(j::JuMPArray{Variable}) in a macro
+        @setObjective(sum_m, Max, sum(matrix))
+        @test quadToStr(sum_m.obj) == "matrix[1,1] + matrix[2,1] + matrix[3,1] + matrix[1,2] + matrix[2,2] + matrix[3,2] + matrix[1,3] + matrix[2,3] + matrix[3,3]"
 
-    # sum{T<:Real}(j::JuMPArray{T})
-    @fact sum(getValue(matrix)) --> roughly(9, 1e-6)
-    # sum(j::Array{Variable})
-    @fact affToStr(sum(matrix[1:3,1:3])) --> affToStr(sum(matrix))
-    # sum(affs::Array{AffExpr})
-    @fact affToStr(sum([2*matrix[i,j] for i in 1:3, j in 1:3])) --> "2 matrix[1,1] + 2 matrix[2,1] + 2 matrix[3,1] + 2 matrix[1,2] + 2 matrix[2,2] + 2 matrix[3,2] + 2 matrix[1,3] + 2 matrix[2,3] + 2 matrix[3,3]"
+        # sum{T<:Real}(j::JuMPArray{T})
+        @test isapprox(sum(getValue(matrix)), 9, atol=1e-6)
+        # sum(j::Array{Variable})
+        @test affToStr(sum(matrix[1:3,1:3])) == affToStr(sum(matrix))
+        # sum(affs::Array{AffExpr})
+        @test affToStr(sum([2*matrix[i,j] for i in 1:3, j in 1:3])) == "2 matrix[1,1] + 2 matrix[2,1] + 2 matrix[3,1] + 2 matrix[1,2] + 2 matrix[2,2] + 2 matrix[3,2] + 2 matrix[1,3] + 2 matrix[2,3] + 2 matrix[3,3]"
 
-    S = [1,3]
-    @defVar(sum_m, x[S], start=1)
-    # sum(j::JuMPDict{Variable})
-    @fact length(affToStr(sum(x))) --> 11 # order depends on hashing
-    @fact contains(affToStr(sum(x)),"x[1]") --> true
-    @fact contains(affToStr(sum(x)),"x[3]") --> true
-    # sum{T<:Real}(j::JuMPDict{T})
-    @fact sum(getValue(x)) --> 2
+        S = [1,3]
+        @defVar(sum_m, x[S], start=1)
+        # sum(j::JuMPDict{Variable})
+        @test length(affToStr(sum(x))) == 11 # order depends on hashing
+        @test contains(affToStr(sum(x)),"x[1]")
+        @test contains(affToStr(sum(x)),"x[3]")
+        # sum{T<:Real}(j::JuMPDict{T})
+        @test sum(getValue(x)) == 2
+    end
 end
+
+end
+error()
 
 context("dot") do
     dot_m = Model()
