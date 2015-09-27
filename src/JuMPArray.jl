@@ -5,67 +5,59 @@
 
 # This code is unused for now. See issue #192
 
-immutable JuMPArray{T,N,R<:OrdinalRange} <: JuMPContainer
+immutable JuMPArray{T,N} <: JuMPContainer
     innerArray::Array{T,N}
-    name::Symbol
-    indexsets::NTuple{N,R}
+    indexsets::NTuple{N}
+    lookup::NTuple{N,Dict}
+    meta::Dict{Symbol,Any}
 end
 
-function Base.getindex{T}(d::JuMPArray{T,1,UnitRange{Int}},index::Real)
-    @inbounds return d.innerArray[index - start(d.indexsets[1])+1]
+function JuMPArray{T,N}(innerArray::Array{T,N}, indexsets::NTuple{N})
+    JuMPArray(innerArray, indexsets, ntuple(N) do i
+        idxset = indexsets[i]
+        ret = Dict{eltype(idxset), Int}()
+        if !(eltype(idxset) == Int && (typeof(idxset) == UnitRange || typeof(idxset) == StepRange))
+            cnt = 1
+            for x in idxset
+                ret[x] = cnt
+                cnt += 1
+            end
+        end
+        ret
+    end, Dict{Symbol,Any}())
 end
 
-function Base.getindex{T}(d::JuMPArray{T,2,UnitRange{Int}},ix1::Real,ix2::Real)
-    @inbounds return d.innerArray[ix1 - start(d.indexsets[1])+1, ix2 - start(d.indexsets[2])+1]
+function _rev_lookup(lookup, rng::UnitRange{Int}, I)
+    first(rng) <= I <= last(rng) || throw(BoundsError())
+    I - (start(rng) - 1)
+end
+function _rev_lookup(lookup, rng::StepRange{Int}, I)
+    first(rng) <= I <= last(rng) || throw(BoundsError())
+    d, r = divrem(I - start(rng), step(rng))
+    r == 0 || throw(BoundsError())
+    d + 1
 end
 
+_rev_lookup(lookup, v, I) = lookup[I]::Int
 
-function Base.getindex{T,N}(d::JuMPArray{T,N,UnitRange{Int}},indices::Real...)
-    length(indices) == N || error("Wrong number of indices for ",d.name,", expected ",length(d.indexsets))
-    idx = Array(Int, N)
+Base.getindex{T}(d::JuMPArray{T,1}, I) =
+    d.innerArray[_rev_lookup(d.lookup[1], d.indexsets[1], I[1])]
+
+Base.setindex!{T}(d::JuMPArray{T,1}, v::T, I) =
+    d.innerArray[_rev_lookup(d.lookup[1], d.indexsets[1], I[1])] = v
+
+function Base.getindex{T,N}(d::JuMPArray{T,N}, I::NTuple{N})
+    idx = zeros(Int, N)
     for i in 1:N
-        idx[i] = Base.to_index(indices[i]) - start(d.indexsets[i]) + 1
+        idx[i] = _rev_lookup(d.lookup[i], d.indexsets[i], I[i])
     end
-    return d.innerArray[idx...]
+    d.innerArray[idx...]
 end
 
-function Base.getindex{T,N}(d::JuMPArray{T,N,StepRange{Int,Int}},indices::Int...)
-    length(indices) == N || error("Wrong number of indices for ",d.name,", expected ",length(d.indexsets))
-    idx = Array(Int, N)
-    steps  = 0
-    starts = 0
+function Base.setindex!{T,N}(d::JuMPArray{T,N}, v::T, I::NTuple{N})
+    idx = zeros(Int, N)
     for i in 1:N
-        steps  = step(d.indexsets[i])
-        starts = start(d.indexsets[i])
-        idx[i] = convert(Int,(indices[i]-starts)/steps) + 1
+        idx[i] = _rev_lookup(d.lookup[i], d.indexsets[i], I[i])
     end
-    return d.innerArray[idx...]
+    d.innerArray[idx...] = v
 end
-
-function Base.setindex!{T,N}(d::JuMPArray{T,N,UnitRange{Int}},val::T,indices::Int...)
-    length(indices) == N || error("Wrong number of indices for ",d.name,", expected ",length(d.indexsets))
-    idx = Array(Int, N)
-    for i in 1:N
-        idx[i] = indices[i] - start(d.indexsets[i]) + 1
-    end
-    d.innerArray[idx...] = val
-end
-
-function Base.setindex!{T,N}(d::JuMPArray{T,N,StepRange{Int,Int}},val::T,indices::Int...)
-    length(indices) == N || error("Wrong number of indices for ",d.name,", expected ",length(d.indexsets))
-    idx = Array(Int, N)
-    steps  = 0
-    starts = 0
-    for i in 1:N
-        steps  = step(d.indexsets[i])
-        starts = start(d.indexsets[i])
-        idx[i] = convert(Int,(indices[i]-starts)/steps) + 1
-    end
-    d.innerArray[idx...] = val
-end
-
-Base.map{T,N,R}(f::Function,d::JuMPArray{T,N,R}) =
-    JuMPArray{T,N,R}(map(f,d.innerArray), d.name, d.indexsets)
-
-Base.eltype{T,N,R}(x::JuMPArray{T,N,R}) = T
-

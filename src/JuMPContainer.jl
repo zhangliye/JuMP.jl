@@ -7,18 +7,14 @@ using Base.Meta
 # multivarate "dictionary" used for collections of variables/constraints
 
 abstract JuMPContainer{T,N}
-abstract JuMPArray{T,N} <: JuMPContainer{T,N} # Q is true if all index sets are of the form 1:n
+
+include("JuMPArray.jl")
 
 type IndexPair
     idxvar
     idxset
 end
-#= Generated on the fly
-type JuMPArray{T}
-    innerArray::Array{T,N}
-    meta::Dict{Symbol,Any}
-end
-=#
+
 type JuMPDict{T,N} <: JuMPContainer{T,N}
     tupledict::Dict{NTuple{N,Any},T}
     meta::Dict{Symbol,Any}
@@ -69,105 +65,16 @@ Base.isempty(d::JuMPContainer) = isempty(_innercontainer(d))
 # 0:K -- range with compile-time starting index
 # S -- general iterable set
 export @gendict
-macro gendict(instancename,T,idxpairs,idxsets...)
+macro gendict(instancename,T,idxsets...)
     N = length(idxsets)
-    allranges = all(s -> (isexpr(s,:(:)) && length(s.args) == 2), idxsets)
-    truearray = allranges && all(s -> s.args[1] == 1, idxsets)
-    if allranges
-        if truearray
-            sizes = Expr(:tuple, [esc(rng.args[end]) for rng in idxsets]...)
-            :($(esc(instancename)) = Array($T, $sizes))
-        else
-            typename = symbol(string("JuMPArray",gensym()))
-            dictnames = Array(Symbol,N)
-            # JuMPArray
-            offset = Array(Int,N)
-            for i in 1:N
-                if isa(idxsets[i].args[1],Int)
-                    offset[i] = 1 - idxsets[i].args[1]
-                else
-                    error("Currently only ranges with integer compile-time starting values are allowed as index sets. $(idxsets[i].args[1]) is not an integer in range $(idxsets[i]).")
-                end
-            end
-            typecode = quote
-                type $(typename){T} <: JuMPArray{T,$N}
-                    innerArray::Array{T,$N}
-                    meta::Dict{Symbol,Any}
-                end
-            end
-            constrlhs = :($(typename)(innerArray::Array))
-            constrrhs = :($(typename)(innerArray, Dict{Symbol,Any}()))
-            getidxlhs = :(Base.getindex(d::$(typename)))
-            setidxlhs = :(Base.setindex!(d::$(typename),val))
-            getidxrhs = :(Base.getindex(d.innerArray))
-            setidxrhs = :(Base.setindex!(d.innerArray,val))
-            maplhs = :(Base.map(f::Function,d::$(typename)))
-            maprhs = :($(typename)(map(f,d.innerArray),d.meta))
-            wraplhs = :(JuMPContainer_from(d::$(typename),inner)) # helper function that wraps array into JuMPArray of similar type
-            wraprhs = :($(typename)(inner))
-
-            nextidxlhs = :(_next_index(d::$(typename), k))
-            # build up exprs for _next_index
-            lidxsets = [ii => symbol(string("locidxset",ii)) for ii in 1:N]
-            nextidxrhs = quote
-                subidx = ind2sub(size(d), k)
-                $(Expr(:tuple, [:(subidx[$ii] - $(offset[ii])) for ii in 1:N]...))
-            end
-            for i in 1:N
-                varname = symbol(string("x",i))
-
-                push!(getidxlhs.args,:($varname))
-                push!(setidxlhs.args,:($varname))
-
-                push!(getidxrhs.args,:(isa($varname, Int) ? $varname+$(offset[i]) : $varname ))
-                push!(setidxrhs.args,:($varname+$(offset[i])))
-
-            end
-
-            badgetidxlhs = :(Base.getindex(d::$(typename),wrong...))
-            badgetidxrhs = :(data = printdata(d);
-                            error("Wrong number of indices for ",data.name, ", expected ",length(data.indexsets)))
-
-            funcs = quote
-                $constrlhs    = $constrrhs
-                $getidxlhs    = $getidxrhs
-                $setidxlhs    = $setidxrhs
-                $maplhs       = $maprhs
-                $badgetidxlhs = $badgetidxrhs
-                $wraplhs      = $wraprhs
-                $nextidxlhs   = $nextidxrhs
-            end
-            geninstance = :($(esc(instancename)) = $(typename)(Array($T)))
-            for i in 1:N
-                push!(geninstance.args[2].args[2].args, :(length($(esc(idxsets[i])))))
-            end
-            eval(Expr(:toplevel, typecode))
-            eval(Expr(:toplevel, funcs))
-
-            return geninstance
-        end
-
-        #= TODO: Use this with code in JuMPArray.jl once Julia can make it efficient
-        if all([length(s.args) == 3 for s in idxsets])
-            # has step
-            for i in 1:N
-                if length(idxsets[i].args) == 2
-                    push!(idxsets[i].args, idxsets[i].args[2])
-                    idxsets[i].args[2] = 1
-                end
-            end
-        end
-        geninstance = :($(esc(instancename)) = JuMPArray(Array($T),$(quot(instancename)),$(esc(Expr(:tuple,idxsets...)))))
-        for i in 1:N
-            push!(geninstance.args[2].args[2].args, :(length($(esc(idxsets[i])))))
-        end
-        return geninstance
-        =#
+    truearray = all(s -> (isexpr(s,:(:)) && length(s.args) == 2), idxsets) &&
+                all(s -> s.args[1] == 1, idxsets)
+    sizes = Expr(:tuple, [:(length($(esc(rng)))) for rng in idxsets]...)
+    if truearray
+        :($(esc(instancename)) = Array($T, $sizes))
     else
-        # JuMPDict
-        return :(
-            $(esc(instancename)) = JuMPDict{$T,$N}()
-        )
+        indexsets = Expr(:tuple, [:($(esc(idxset))) for idxset in idxsets]...)
+        :($(esc(instancename)) = JuMPArray(Array($T, $sizes), $indexsets))
     end
 end
 

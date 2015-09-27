@@ -52,7 +52,6 @@ export
     @defNLExpr
 
 include("JuMPContainer.jl")
-#include("JuMPArray.jl")
 include("utils.jl")
 
 ###############################################################################
