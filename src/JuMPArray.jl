@@ -5,9 +5,9 @@
 
 # This code is unused for now. See issue #192
 
-immutable JuMPArray{T,N} <: JuMPContainer
+immutable JuMPArray{T,N,NT<:NTuple} <: JuMPContainer{T}
     innerArray::Array{T,N}
-    indexsets::NTuple{N}
+    indexsets::NT
     lookup::NTuple{N,Dict}
     meta::Dict{Symbol,Any}
 end
@@ -27,37 +27,54 @@ function JuMPArray{T,N}(innerArray::Array{T,N}, indexsets::NTuple{N})
     end, Dict{Symbol,Any}())
 end
 
-function _rev_lookup(lookup, rng::UnitRange{Int}, I)
-    first(rng) <= I <= last(rng) || throw(BoundsError())
-    I - (start(rng) - 1)
-end
-function _rev_lookup(lookup, rng::StepRange{Int}, I)
-    first(rng) <= I <= last(rng) || throw(BoundsError())
-    d, r = divrem(I - start(rng), step(rng))
-    r == 0 || throw(BoundsError())
-    d + 1
-end
-
-_rev_lookup(lookup, v, I) = lookup[I]::Int
-
-Base.getindex{T}(d::JuMPArray{T,1}, I) =
-    d.innerArray[_rev_lookup(d.lookup[1], d.indexsets[1], I[1])]
-
-Base.setindex!{T}(d::JuMPArray{T,1}, v::T, I) =
-    d.innerArray[_rev_lookup(d.lookup[1], d.indexsets[1], I[1])] = v
-
-function Base.getindex{T,N}(d::JuMPArray{T,N}, I::NTuple{N})
-    idx = zeros(Int, N)
-    for i in 1:N
-        idx[i] = _rev_lookup(d.lookup[i], d.indexsets[i], I[i])
+@generated function Base.getindex{T,N,NT<:NTuple}(d::JuMPArray{T,N,NT}, idx...)
+    indexing = Any[]
+    for (i,S) in enumerate(NT.parameters)
+        if S == UnitRange{Int}
+            push!(indexing, quote
+                rng = d.indexsets[$i]
+                I = idx[$i]
+                first(rng) <= I <= last(rng) || throw(BoundsError())
+                I - (start(rng) - 1)
+            end)
+        elseif S == StepRange{Int}
+            push!(indexing, quote
+                rng = $(d.indexsets[i])
+                I = idx[$i]
+                first(rng) <= I <= last(rng) || throw(BoundsError())
+                d, r = divrem(I - start(rng), step(rng))
+                r == 0 || throw(BoundsError())
+                d + 1
+            end)
+        else
+            push!(indexing, :(d.lookup[$i][idx[$i]]::Int))
+        end
     end
-    d.innerArray[idx...]
+    Expr(:call, :getindex, :(d.innerArray), indexing...)
 end
 
-function Base.setindex!{T,N}(d::JuMPArray{T,N}, v::T, I::NTuple{N})
-    idx = zeros(Int, N)
-    for i in 1:N
-        idx[i] = _rev_lookup(d.lookup[i], d.indexsets[i], I[i])
+@generated function Base.setindex!{T,N,NT<:NTuple}(d::JuMPArray{T,N,NT}, v::T, idx...)
+    indexing = Any[]
+    for (i,S) in enumerate(NT.parameters)
+        if S == UnitRange{Int}
+            push!(indexing, quote
+                rng = d.indexsets[$i]
+                I = idx[$i]
+                first(rng) <= I <= last(rng) || throw(BoundsError())
+                I - (start(rng) - 1)
+            end)
+        elseif S == StepRange{Int}
+            push!(indexing, quote
+                rng = $(d.indexsets[i])
+                I = idx[$i]
+                first(rng) <= I <= last(rng) || throw(BoundsError())
+                d, r = divrem(I - start(rng), step(rng))
+                r == 0 || throw(BoundsError())
+                d + 1
+            end)
+        else
+            push!(indexing, :(d.lookup[$i][idx[$i]]::Int))
+        end
     end
-    d.innerArray[idx...] = v
+    Expr(:call, :setindex!, :(d.innerArray), :v, indexing...)
 end

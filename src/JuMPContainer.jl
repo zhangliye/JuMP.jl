@@ -109,6 +109,7 @@ function _getValueInner(x)
 end
 
 JuMPContainer_from(x::JuMPDict,inner) = JuMPDict(inner)
+JuMPContainer_from(x::JuMPArray,inner) = JuMPArray(inner, x.indexsets)
 
 function getValue(x::JuMPContainer)
     getvalue_warn(x)
